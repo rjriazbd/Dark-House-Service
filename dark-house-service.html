@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Dark House Service</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      padding: 52px 20px 32px;
+      min-height: 100dvh;
+    }
+
+    /* Header */
+    .header { margin-bottom: 24px; }
+    .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: #0f172a; }
+    .header p  { font-size: 14px; color: #64748b; margin-top: 4px; }
+
+    /* Status card */
+    .status-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: all .3s;
+    }
+
+    .lock-circle {
+      width: 68px; height: 68px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+      transition: background .3s;
+      font-size: 28px;
+    }
+
+    .status-title {
+      font-size: 20px; font-weight: 700;
+      margin-bottom: 4px; transition: color .3s;
+    }
+
+    .status-sub { font-size: 13px; color: #64748b; }
+
+    .saved-number { font-size: 13px; color: #64748b; margin-top: 6px; font-weight: 500; }
+
+    /* Success banner */
+    .success-banner {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      background: #d1fae5;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #065f46;
+      animation: slideDown .25s ease;
+    }
+    .success-banner.show { display: flex; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Button grid */
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .btn-row.single { grid-template-columns: 1fr; }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 8px;
+      border-radius: 16px;
+      border: 1.5px solid;
+      cursor: pointer;
+      background: none;
+      font-family: inherit;
+      transition: transform .12s, box-shadow .12s, opacity .2s;
+      user-select: none;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .action-btn:disabled:active { transform: none; }
+
+    .btn-icon {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: background .3s;
+    }
+
+    .btn-label { font-size: 11px; font-weight: 600; letter-spacing: .2px; }
+
+    /* Colors */
+    .btn-lock    { --c: #3b82f6; }
+    .btn-unlock  { --c: #10b981; }
+    .btn-email   { --c: #8b5cf6; }
+    .btn-number  { --c: #f59e0b; }
+    .btn-data    { --c: #06b6d4; }
+    .btn-offline { --c: #64748b; }
+    .btn-format  { --c: #ef4444; }
+
+    .action-btn {
+      color: var(--c);
+      border-color: color-mix(in srgb, var(--c) 40%, transparent);
+      background-color: color-mix(in srgb, var(--c) 8%, transparent);
+    }
+    .action-btn .btn-icon {
+      background-color: color-mix(in srgb, var(--c) 16%, transparent);
+    }
+
+    /* Modal */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+    .overlay.open { display: flex; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+    .modal-card {
+      width: 100%; max-width: 430px; margin: 0 auto;
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px 44px;
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity:0; }
+      to   { transform: translateY(0);    opacity:1; }
+    }
+
+    .modal-handle {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: #e2e8f0; margin: 0 auto 20px;
+    }
+
+    .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #0f172a; }
+
+    .modal-label {
+      font-size: 11px; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-family: inherit;
+      color: #0f172a;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .modal-input:focus { border-color: #3b82f6; }
+
+    .primary-btn {
+      width: 100%; padding: 16px;
+      border: none; border-radius: 14px;
+      font-size: 16px; font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 8px;
+      transition: opacity .2s;
+    }
+    .primary-btn:hover { opacity: .9; }
+
+    .cancel-btn {
+      width: 100%; padding: 14px;
+      border: none; background: none;
+      font-size: 15px; font-weight: 500;
+      font-family: inherit;
+      color: #64748b; cursor: pointer; margin-top: 4px;
+    }
+
+    /* Locked state */
+    body.locked .status-title  { color: #3b82f6; }
+    body.locked .lock-circle   { background: color-mix(in srgb,#3b82f6 13%,transparent); }
+    body.unlocked .status-title { color: #10b981; }
+    body.unlocked .lock-circle  { background: color-mix(in srgb,#10b981 13%,transparent); }
+  </style>
+</head>
+<body class="unlocked">
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Dark House Service</h1>
+    <p>Manage device &amp; communications</p>
+  </div>
+
+  <!-- Status Card -->
+  <div class="status-card">
+    <div class="lock-circle" id="lockCircle">🔓</div>
+    <div class="status-title" id="statusTitle">Phone Unlocked</div>
+    <div class="status-sub"  id="statusSub">Tap Lock to secure your device</div>
+    <div class="saved-number" id="savedNumber" style="display:none"></div>
+    <div class="success-banner" id="successBanner">
+      <span>✅</span>
+      <span id="successText"></span>
+    </div>
+  </div>
+
+  <!-- Row 1 -->
+  <div class="btn-row">
+    <button class="action-btn btn-lock"   onclick="handleLock()"   id="lockBtn">
+      <div class="btn-icon">🔒</div>
+      <span class="btn-label">Lock Phone</span>
+    </button>
+    <button class="action-btn btn-unlock" onclick="handleUnlock()" id="unlockBtn">
+      <div class="btn-icon">🔓</div>
+      <span class="btn-label">Unlock Phone</span>
+    </button>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="btn-row">
+    <button class="action-btn btn-email"  onclick="openModal('emailModal')">
+      <div class="btn-icon">✉️</div>
+      <span class="btn-label">Send Email</span>
+    </button>
+    <button class="action-btn btn-number" onclick="openModal('numberModal')">
+      <div class="btn-icon">#️⃣</div>
+      <span class="btn-label">Change Number</span>
+    </button>
+  </div>
+
+  <!-- Row 3 -->
+  <div class="btn-row">
+    <button class="action-btn btn-data"    onclick="handleConfirm('Data Recovery','Start data recovery?','Recover','Data Recovery Successful')">
+      <div class="btn-icon">🗄️</div>
+      <span class="btn-label">Data Recovery</span>
+    </button>
+    <button class="action-btn btn-offline" onclick="handleConfirm('Device Offline','Set device to offline mode?','Go Offline','Device Set to Offline')">
+      <div class="btn-icon">📵</div>
+      <span class="btn-label">Device Offline</span>
+    </button>
+  </div>
+
+  <!-- Row 4 -->
+  <div class="btn-row single">
+    <button class="action-btn btn-format"  onclick="handleConfirm('Format Device','Are you sure? This cannot be undone.','Format','Format Successful')">
+      <div class="btn-icon">🗑️</div>
+      <span class="btn-label">Format Device</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- Send Email Modal -->
+<div class="overlay" id="emailModal" onclick="handleOverlayClick(event,'emailModal')">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Send Email</div>
+    <div class="modal-label">Recipient Email</div>
+    <input class="modal-input" id="emailTo" type="email" value="evoush666crew@gmail.com" placeholder="email@example.com" />
+    <div class="modal-label">Number</div>
+    <input class="modal-input" id="emailNumber" type="number" placeholder="Enter a number to include" />
+    <button class="primary-btn" style="background:#8b5cf6" onclick="handleSendEmail()">
+      <span>📤</span> Send Email
+    </button>
+    <button class="cancel-btn" onclick="closeModal('emailModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Change Number Modal -->
+<div class="overlay" id="numberModal" onclick="handleOverlayClick(event,'numberModal')">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Change Number</div>
+    <div class="modal-label">New Number</div>
+    <input class="modal-input" id="newNumber" type="tel" placeholder="Enter your new number" />
+    <button class="primary-btn" style="background:#f59e0b" onclick="handleChangeNumber()">
+      <span>✔️</span> Save Number
+    </button>
+    <button class="cancel-btn" onclick="closeModal('numberModal')">Cancel</button>
+  </div>
+</div>
+
+<script>
+  let isLocked = false;
+  let successTimer = null;
+
+  function showSuccess(msg) {
+    clearTimeout(successTimer);
+    const banner = document.getElementById('successBanner');
+    document.getElementById('successText').textContent = msg;
+    banner.classList.add('show');
+    successTimer = setTimeout(() => banner.classList.remove('show'), 2500);
+  }
+
+  function updateLockUI() {
+    const body = document.body;
+    const circle = document.getElementById('lockCircle');
+    const title  = document.getElementById('statusTitle');
+    const sub    = document.getElementById('statusSub');
+    if (isLocked) {
+      body.className = 'locked';
+      circle.textContent = '🔒';
+      title.textContent  = 'Phone Locked';
+      sub.textContent    = 'Tap Unlock to regain access';
+    } else {
+      body.className = 'unlocked';
+      circle.textContent = '🔓';
+      title.textContent  = 'Phone Unlocked';
+      sub.textContent    = 'Tap Lock to secure your device';
+    }
+  }
+
+  function handleLock() {
+    isLocked = true;
+    updateLockUI();
+    showSuccess('Phone locked successfully');
+  }
+
+  function handleUnlock() {
+    isLocked = false;
+    updateLockUI();
+    showSuccess('Phone unlocked successfully');
+  }
+
+  function handleConfirm(title, message, confirmLabel, successMsg) {
+    if (confirm(title + '\n\n' + message)) {
+      showSuccess(successMsg);
+    }
+  }
+
+  function handleSendEmail() {
+    const to  = document.getElementById('emailTo').value.trim();
+    const num = document.getElementById('emailNumber').value.trim();
+    if (!to) { alert('Please enter a recipient email address.'); return; }
+    const body    = num ? encodeURIComponent('Number: ' + num) : '';
+    const subject = encodeURIComponent('Message');
+    window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+    document.getElementById('emailNumber').value = '';
+    closeModal('emailModal');
+  }
+
+  function handleChangeNumber() {
+    const num = document.getElementById('newNumber').value.trim();
+    if (!num) { alert('Please enter a number before saving.'); return; }
+    const el = document.getElementById('savedNumber');
+    el.textContent = 'Number: ' + num;
+    el.style.display = 'block';
+    document.getElementById('newNumber').value = '';
+    closeModal('numberModal');
+    showSuccess('Changed Successfully');
+  }
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+</script>
+</body>
+</html>
